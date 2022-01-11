@@ -1,0 +1,12 @@
+# depslib dependency file v1.0
+1641864790 source:c:\users\masenpitts\documents\phys3300\cppprograms\cppprograms\main.cpp
+	<iostream>
+	<string>
+	"hello.hpp"
+
+1641864876 source:c:\users\masenpitts\documents\phys3300\cppprograms\cppprograms\helloworld.cpp
+	<iostream>
+	"hello.hpp"
+
+1641864894 c:\users\masenpitts\documents\phys3300\cppprograms\cppprograms\hello.hpp
+
