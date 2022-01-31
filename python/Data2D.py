@@ -22,6 +22,6 @@ error = np.multiply(oilData["oil"], 0.05)
 plt.bar(oilData["month"], oilData["oil"], yerr=error, color="green")
 # Configure figure settings
 plt.title("Monthly Imports of all Grades of Crude Oil from World to U.S")
-plt.xlabel("Month (Year Month)")
+plt.xlabel("Month (Year Month - XXXX XX)")
 plt.ylabel("Crude Oil Imported (thousands of barrels)")
 plt.show()
