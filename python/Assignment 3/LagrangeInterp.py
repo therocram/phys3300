@@ -30,7 +30,11 @@ def getIndex(x, x_pos):
 # i - index of closest true data point BEFORE target position
 # x_pos - target x position where interpolation is to occur
 def linearInterp(x, f, i, x_pos):
-    result = f[i] + (x_pos - x[i])/(x[i+1] - x[i])*(f[i+1] - f[i])
+    if x[i+1] < x[i]:
+        nextI = i-1
+    else:
+        nextI = i+1
+    result = f[i] + (x_pos - x[i])/(x[nextI] - x[i])*(f[nextI] - f[i])
     return result
 
 # Performs an nth order Lagrangian interpolation at the target position
@@ -44,7 +48,11 @@ def lagrangeInterp(x, f, n, i, x_pos):
     indexList = []  # List storing indices of true data points used in interpolation
     
     # A series of helper variables that assist in adding elements to the index list
-    forward = True 
+    
+    if x[i+1] < x[i]:
+        forward = False
+    else:
+        forward = True
     countforward = 0
     countbackward = 0
     
@@ -89,7 +97,7 @@ def interp(x, f, n, x_pos):
     # Determines whether Lagrangian interpolation is suitable by
     # considering the proximity of target point to the bounds of the data
     # set.
-    if (iBefore < n/2) or (iBefore > len(x) - 1 - n/2):
+    if (iBefore < n/2) or (iBefore > len(x) - 1 - n/2) or (n==1):
         result = linearInterp(x, f, iBefore, x_pos)
     else:
         result = lagrangeInterp(x, f, n, iBefore, x_pos)
@@ -106,11 +114,11 @@ def interp(x, f, n, x_pos):
 # x - value the selected function is to be evaluated at
 # selection - choice of function
 def selectFunc(x, selection):
-    if selection == "1":
+    if selection.strip() == "1":
         return np.sin(x**2)
-    elif selection == "2":
+    elif selection.strip() == "2":
         return np.exp(np.sin(x))
-    elif selection == "3":
+    elif selection.strip() == "3":
         return 0.2/((x - 3.2)**2 + 0.04)
     else:
         sys.exit("\nError: Please select an equation using its corresponding number")
@@ -124,10 +132,14 @@ def percentDiff(approx, exact):
 def runConsole():
     equationList = "1. f(x) = sin(x^2)\n2. f(x) = exp(sin(x))\n3. f(x) = 0.2/((x-3.2)^2 + 0.04)"
     
-    print("Welcome to the Interpolator 1.1\nSelect an equation from the list below\n" + equationList)
+    print("Welcome to the Interpolator 1.4\nSelect an equation from the list below\n" + equationList)
     
     functionSelection = input("Select an equation from the list above: ")
+    
     dataPointsSelection = int(input("Enter total number of desired starting points: "))
+    
+    if dataPointsSelection <= 0:
+        sys.exit("Error: Value provided for starting points must be a nonzero positive integer")
     
     minRangeSelection = float(input("Enter Minimum of Data Range: "))
     maxRangeSelection = float(input("Enter Maximum of Data Range: "))
@@ -145,7 +157,7 @@ def runConsole():
     xdata = np.arange(minRangeSelection, maxRangeSelection + interval, interval)
     fdata = selectFunc(xdata, functionSelection)
     
-    return functionSelection.strip(), xdata, fdata, interpSelection
+    return functionSelection, xdata, fdata, interpSelection
 
 # Prints the interpolation results and accuracy measurements
 def printResults(f_interp, x_value, funcSelect):
@@ -154,24 +166,4 @@ def printResults(f_interp, x_value, funcSelect):
     print("\nInterpolated Value: " + str(f_interp))
     print("Actual Value: " + str(actual))
     print("Percent Difference: " + str(percentDiff(f_interp, actual)))
-##############################################################################  
-
-'''
-f, x = getData()
-
-n_ord, x_pos = getInfo()
-
-result = interp(x, f, n_ord, x_pos)
-
-print(result)
-
-x_grid = np.arange(1,18,0.01)
-f_interp = []
-
-for each in x_grid:
-    f_interp.append(interp(x, f, n_ord, each))
-
-plt.plot(x, f, "bo")
-plt.plot(x_grid, f_interp)
-plt.show()
-'''
+##############################################################################
