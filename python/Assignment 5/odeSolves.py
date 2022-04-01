@@ -23,45 +23,114 @@ def euler(y, g, d):
 
 def rungeKutta4(y, g, d):
     
-    c1 = c2 = c3 = c4 = np.zeros(len(y))
+    # Stores the parameters of the terms
+    # up to the 4th order term of the series expansion of
+    # the solution function
+    c1 = np.zeros(len(y))
+    c2 = np.zeros(len(y))
+    c3 = np.zeros(len(y))
+    c4 = np.zeros(len(y))
     
+    ytemp = np.array(y)
+
+    # Assign values to the parameters
     for i in range(len(y)):
         c1[i] = d * g[i](y)
-        c2[i] = d * g[i](y + 0.5*c1)
-        c3[i] = d * g[i](y + 0.5*c2)
-        c4[i] = d * g[i](y + c3)
+        ytemp[i] = y[i] + 0.5*c1[i]
+        c2[i] = d * g[i](ytemp)
+        ytemp[i] = y[i] + 0.5*c2[i]
+        c3[i] = d * g[i](ytemp)
+        ytemp[i] = y[i] + c3[i]
+        c4[i] = d * g[i](ytemp)
         
-    return y + (c1 + 2*c2 + 2*c3 + c4)/6
+        # Approximate the solution value using a 4th order 
+        # series expansion
+        y[i] += (c1[i] + 2*c2[i] + 2*c3[i] + c4[i])/6.
+        
+    return y
 
 # The Leap Frog method is only applicable to second order systems governed
 # by an equation that can be written in the form x'' = f(x)
-#
-# The "y" lists is assumed to store the positions and
-# velocities of a series of systems. That is, "y" is assumed to have the form
-# y = [pos1, vel1, pos2, vel2, ...] 
-#
-# The "g" list is assumed to store the generalized velocities of the quantities
-# stored in the "y" list. That is, "g" is assumed to have the form
-# g = [vel1, accel1, vel2, accel2, ...] 
-def leapFrog(y, g, d):
-    # This loops works with values at 2 different index positions in each
-    # array and so iterates in steps of two.
-    for i in range(len(y), 2):
-        oldg = g[i+1](y) # Stores old acceleration
-        y[i] += g[i](y)*d + 0.5*oldg*d*d # Update positions
-        newg = g[i+1](y) # Stores new acceleration
-        y[i+1] += 0.5*(oldg + newg)*d # Update velocities
+# Unlike the other subroutines, this function expects an array to store
+# solution values "solutionList" and solves the system based on the shape
+# of the array.
+# This method is only for second order equations, so "y" and "g" are both
+# expected to have two elements each corresponding to position and velocity
+def leapFrog(y, g, dt, solutionList): 
+    # Add initial conditions to solution list
+    solutionList[0] = y
     
-    return y
- 
+    # Advance velocity by half a time step
+    y[1] += 0.5*dt*g[1](y)
+    
+    N = solutionList.shape[0]
+    
+    for t in range(1, N):
+        y[0] += y[1]*dt
+        y[1] += g[1](y)*dt
+        
+        # Store unsynced velocity
+        unsyncVel = y[1]
+        
+        # Synchronize velocity using Euler and add it to output
+        # array
+        y[1] -= 0.5*dt*g[1](y)
+        solutionList[t] = y
+        
+        # Restore unsynced veloctiy to continue calculations
+        y[1] = unsyncVel
+    
+    return solutionList
+
 # This overhead function allows the user to easily select a solver method.   
-def solver(y, g, d, selection):
-    if selection == "1":
-        return euler(y, g, d)
-    elif selection == "2":
-        return rungeKutta4(y, g, d)
-    elif selection == "3":
-        return leapFrog(y, g, d)
+def solver(y, g, d, selection, solutionList = [], t = 0):
+    # Time independent variations
+    if t == 0: 
+        if selection == "1":
+            return euler(y, g, d)
+        elif selection == "2":
+            return rungeKutta4(y, g, d)
+        elif selection == "3":
+            if solutionList == []:
+                print("Error: Provide list to store solution values for Leap Frog")
+                sys.exit()
+            return leapFrog(y, g, d, solutionList)
+        else:
+            print("Error: Enter valid selection for solver method")
+            sys.exit()
+    # Time dependent variations
     else:
-        print("Error: Enter valid selection for solver method")
-        sys.exit()
+        if selection == "2":
+            return rungeKutta4t(y, g, d, t)
+        else:
+            print("Error: Enter valid selection for solver method")
+            sys.exit()
+        
+# Time-dependent variation of rk4
+def rungeKutta4t(y, g, d, t):
+    
+    # Stores the parameters of the terms
+    # up to the 4th order term of the series expansion of
+    # the solution function
+    c1 = np.zeros(len(y))
+    c2 = np.zeros(len(y))
+    c3 = np.zeros(len(y))
+    c4 = np.zeros(len(y))
+    
+    ytemp = np.array(y)
+
+    # Assign values to the parameters
+    for i in range(len(y)):
+        c1[i] = d * g[i](y, t)
+        ytemp[i] = y[i] + 0.5*c1[i]
+        c2[i] = d * g[i](ytemp, t + 0.5*d)
+        ytemp[i] = y[i] + 0.5*c2[i]
+        c3[i] = d * g[i](ytemp, t + 0.5*d)
+        ytemp[i] = y[i] + c3[i]
+        c4[i] = d * g[i](ytemp, t + d)
+        
+        # Approximate the solution value using a 4th order 
+        # series expansion
+        y[i] += (c1[i] + 2*c2[i] + 2*c3[i] + c4[i])/6
+        
+    return y

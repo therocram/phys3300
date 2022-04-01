@@ -39,7 +39,7 @@ def coulomb(charge, d, eX, eY, V):
     for sourceX in range(xM):
         for sourceY in range(yM):
             # Check for nonzero charge value
-            # Note: the variables kq, r, r3 and kqR3 are strategically placed
+            # Note: the variables kq, r, r3 and kqR3 are carefully placed
             # so as to avoid the unnecessary repetition of calculations and
             # optimize performance.
             if charge[sourceX,sourceY] != 0:
