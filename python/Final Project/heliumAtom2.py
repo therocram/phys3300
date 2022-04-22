@@ -1,9 +1,9 @@
-# heliumAtom
+# heliumAtom2
 # Implements the methods and functions of fakeTime.py to 
 # solve for the ground state and first two excited states
 # of the electrons in a simplified helium atom model
 #
-# Created by Masen Pitts on 4/10/2022
+# Created by Masen Pitts on 4/20/2022
 # Last updated on 4/21/2022
 
 #**************************************************#
@@ -103,14 +103,38 @@ grdState, excited1, excited2, R1, R2, energyList = ft.quantumSolver2D(rmin,
                                                 excGuess2, boundaryValue, 
                                                 dtau, N)
 
-# 3D surface plots of three lowest reduced energy eigenfunctions.
+# Next Steps:
+#   -Improve accuracy w/ simpson rule, reduced radial -> radial
+#   -Use density plots instead of 3D surface plots
+#   -Take a closer look at the reduced radial wavefunction vs.
+#    radial wavefunction thing (done)
+#   -Experiment with asymmetric guess functions. How long do we need
+#    to let them run before they reproduce symmetry/antip-symmetry?
+
+nonBound = (slice(1, R1.shape[0]-1), slice(1, R1.shape[1]-1))
+
+grdState[nonBound] /= (R1[nonBound]*R2[nonBound])
+excited1[nonBound] /= (R1[nonBound]*R2[nonBound])
+excited2[nonBound] /= (R1[nonBound]*R2[nonBound])
+
+ft.normalize(grdState, R1, R2)
+ft.normalize(excited1, R1, R2)
+ft.normalize(excited2, R1, R2)
+
+grd = grdState[nonBound]
+exc1 = excited1[nonBound]
+exc2 = excited2[nonBound]
+
+r1 = R1[nonBound]
+r2 = R2[nonBound]
+
 grdPlot = plt.figure()
 axG = grdPlot.add_subplot(projection="3d")
 plt.title("Ground State Wavefunction")
 axG.set_xlabel(r"$r_1$")
 axG.set_ylabel(r"$r_2$")
-axG.set_zlabel(r"$u(r_1,r_2)$")
-axG.plot_surface(R1, R2, grdState, cmap=plt.cm.plasma)
+axG.set_zlabel(r"$\psi (r_1,r_2)$")
+axG.plot_surface(r1, r2, grd, cmap=plt.cm.plasma)
 axG.set_xlim3d(rmin, rmax)
 axG.set_ylim3d(rmin, rmax)
 
@@ -120,7 +144,7 @@ plt.title("First Excited State Wavefunction")
 ax1.set_xlabel(r"$r_1$")
 ax1.set_ylabel(r"$r_2$")
 ax1.set_zlabel(r"$\psi (r_1,r_2)$")
-ax1.plot_surface(R1, R2, excited1, cmap=plt.cm.plasma)
+ax1.plot_surface(r1, r2, exc1, cmap=plt.cm.plasma)
 ax1.set_xlim3d(rmin, rmax)
 ax1.set_ylim3d(rmin, rmax)
 
@@ -130,7 +154,7 @@ plt.title("Second Excited State Wavefunction")
 ax2.set_xlabel(r"$r_1$")
 ax2.set_ylabel(r"$r_2$")
 ax2.set_zlabel(r"$\psi (r_1,r_2)$")
-ax2.plot_surface(R1, R2, excited2, cmap=plt.cm.plasma)
+ax2.plot_surface(r1, r2, exc2, cmap=plt.cm.plasma)
 ax2.set_xlim3d(rmin, rmax)
 ax2.set_ylim3d(rmin, rmax)
 plt.show()

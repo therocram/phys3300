@@ -4,48 +4,76 @@
 # over an arbitrary two dimensional region.
 #
 # Created by Masen Pitts on 4/10/2022
-# Last updated on 4/17/2022
-"""
-Created on Sun Apr 10 17:26:37 2022
+# Last updated on 4/21/2022
 
-@author: masenpitts
-"""
+#**************************************************#
+# These functions are entirely self-organizing. The only
+# function you need to call to execute the full algorithm
+# is quantumSolver2D, which has the following inputs and
+# outputs:
+# 
+# quantumSolver2D(xmin, xmax, ymin, ymax, meshRes, potenE, grdGuess, 
+#                 excGuess1, excGuess2, boundaryValue, dtau, N)
+#
+# Inputs:
+# - xmin, xmax: minimum and maximum values of grid region in the first 
+#   dimension.
+#
+# - ymin, ymax: minimum and maximum values of grid region in the second 
+#   dimension.
+#
+# - meshRes: integer value that determines the total number of grid
+#   points in the first dimension of the grid and solution arrays. The
+#   total number of points in the second dimension is determined by
+#   the function using ymax and the grid spacing in the first dimension.
+#
+# - potenE, grdGuess, excGuess1, excGuess2: Functions written by the user
+#   that take (X, Y) as inputs, where X and Y are multi-dimensional arrays
+#   of the same shape. These functions must be able to handle calculations
+#   across entire arrays, so the use of NumPy functions is highly recommended.
+#
+#
+# - boundaryValue: integer or float number that the setBoundaries
+#   function will use to enforce the desired boundary condition.
+#
+# - dtau: step size for fake time variable.
+#
+# - N: total number of fake time steps the algorithm will run for.
+#
+#
+# Outputs:
+# - grdState, excited1, excited2: 2D numpy arrays that contain the
+#   solution values for the ground state and first excited state
+#   wavefunctions.
+#
+# - X, Y: 2D numpy arrays containing the values of the grid points.
+#   these can be used to visualize the wavefunctions.
+#
+# - energyList: a one dimensional list containing the energy values
+#   calculated by the algorithm. The values are sorted in the array
+#   as [ground state, 1st excited, 2nd excited].
+#
+# For detailed descriptions of the helper functions see the "Functions"
+# subsection of Section 2 of the report.
+#**************************************************#
 
 import numpy as np
-#import matplotlib as plt
 
 def setBoundaries(array, boundaryValue):
     # Find the ends of the array in each dimension
-    edgeX = array.shape[0] - 1
-    edgeY = array.shape[1] - 1
+    edgeY = array.shape[0] - 1
+    edgeX = array.shape[1] - 1
     
     # Use a vectorized assignment operation to set boundary values
     array[0,:] = boundaryValue
     array[:,0] = boundaryValue
-    array[edgeX,:] = boundaryValue
-    array[:,edgeY] = boundaryValue
-
-def simpsonRule(x, f):
-    integral = 0
-    n = len(f) - 1
-    for i in range(1, n, 2):
-        dx = x[i+1] - x[i]
-        integral += dx*(f[i-1] + 4.0*f[i] + f[i+1])/3.0
-    if (n+1) % 2 == 0:
-        return integral + dx*(5.0*f[n] + 8.0*f[n-1] - f[n-2])/12.0
-    else:
-        return integral
+    array[edgeY,:] = boundaryValue
+    array[:,edgeX] = boundaryValue
     
-def simpson2D(f2D, X, Y):
-    '''
-    intList = []
+    return array
     
-    for y in range(Y.shape[0]):
-        intList.append(simpsonRule(f2D[y], X[y]))
-        
-    return simpsonRule(intList, Y[:,0])
-    '''
-    d = X[0,1] - X[0,0]
+def integral2D(f2D, X, Y):
+    d = X[0,1] - X[0,0] # Determine grid spacing
     temp = f2D*d*d
     return np.sum(temp)
 
@@ -60,8 +88,7 @@ def forwardStep(wavefunc, V, dtau, d):
 
 def normalize(wavefunc, X, Y):
     waveSqr = np.power(wavefunc, 2)
-    integral = simpson2D(waveSqr, X, Y)
-    #print(integral)
+    integral = integral2D(waveSqr, X, Y)
     normConst = 1/np.sqrt(integral)
     wavefunc *= normConst
     
@@ -69,7 +96,7 @@ def normalize(wavefunc, X, Y):
     
 def orthogonalize(wavefunc1, wavefunc2, X, Y):
     product = wavefunc1*wavefunc2
-    innerProd = simpson2D(product, X, Y)
+    innerProd = integral2D(product, X, Y)
     wavefunc1[nonBound] -= innerProd*wavefunc2[nonBound]
     
     return wavefunc1
@@ -88,7 +115,7 @@ def getEnergy(wavefunc, V, X, Y, d):
     
     integrand = firstTerm + secondTerm
     
-    return simpson2D(integrand, X, Y)
+    return integral2D(integrand, X, Y)
 
 def groundState(wavefunc, X, Y, V, N, dtau, d):
     for tau in range(N):
@@ -115,21 +142,17 @@ def secondExcited(wavefunc, grdState, excited1, X, Y, V, N, dtau, d):
         normalize(wavefunc, X, Y)
         
     return wavefunc
-'''
-def plotData(grdState, excited1, excited2, X, Y):
-    grdPlot = plt.figure()
-    axG = grdPlot.add_subplot(projection="3d")
-    plt.title("Ground State Wavefunction")
-    plt.show()
-    return
-'''
+
 def quantumSolver2D(xmin, xmax, ymin, ymax, meshRes, potenE, grdGuess, excGuess1, 
                     excGuess2, boundaryValue, dtau, N):
+    # Helper varibles used to create grids
     x = np.linspace(xmin, xmax, meshRes)
     d = x[1] - x[0]
     y = np.arange(ymin, ymax+d, d)
     meshX = meshRes
     meshY = len(y)
+    
+    # Tuples used for indexing
     global nonBound, left, right, up, down
     nonBound = (slice(1, meshY-1), slice(1, meshX-1))
     left = (slice(0, meshY-2), slice(1, meshX-1))
@@ -139,11 +162,13 @@ def quantumSolver2D(xmin, xmax, ymin, ymax, meshRes, potenE, grdGuess, excGuess1
     
     X, Y = np.meshgrid(x, y)
     
+    # Initialize potential energy and wavefunction arrays
     V = potenE(X[nonBound], Y[nonBound])
     grdState = grdGuess(X, Y)
     excited1 = excGuess1(X, Y)
     excited2 = excGuess2(X, Y)
 
+    # Enforce boundary conditions
     setBoundaries(grdState, boundaryValue)
     setBoundaries(excited1, boundaryValue)
     setBoundaries(excited2, boundaryValue)
@@ -161,11 +186,9 @@ def quantumSolver2D(xmin, xmax, ymin, ymax, meshRes, potenE, grdGuess, excGuess1
     secondExcited(excited2, grdState, excited1, X, Y, V, N, dtau, d)
     E2 = getEnergy(excited2, V, X, Y, d)
     
-    #plotData(grdState, excited1, excited2, X, Y)
-    
     energyList = [Egrd, E1, E2]
-    print("System Energy Eigenvalues in Hartree Atomic Units:")
+    print("System Energy Eigenvalues in Natural Units:")
     for E in energyList:
         print("\t" + str(E))
     
-    return grdState, excited1, excited2, energyList
+    return grdState, excited1, excited2, X, Y, energyList
