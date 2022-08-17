@@ -35,6 +35,8 @@
 #       - X**2 + Y**2 - 2D quantum harmonic ossilator
 #       - np.sqrt(X**2 + Y**2) - Cone shaped potential
 #       - np.exp(X*Y) - Don't try this at home
+#       - V0*np.exp(-((X-Y)**2)/c) - Gaussian potential energy with
+#         strength V0 and width c.
 #
 # Note that the accuracy of data will be heavily reliant on
 #   - the guess functions you define in grdGuess, excGuess1, excGuess2.
@@ -62,10 +64,11 @@
 #**************************************************#
 
 import fakeTime as ft
+import numpy as np
 import matplotlib.pyplot as plt
 
 def V(X, Y):
-    return 0
+    return V0*np.exp(-((X-Y)**2)/c)
 
 def grdGuess(X, Y):
     return X*(a-X)*Y*(b-Y)
@@ -82,13 +85,15 @@ def excGuess2(X, Y):
     y = Y*(b-Y)*((b/3.0) - Y)*((2*b/3.0) - Y)
     return x*y
 
-a = 3
-b = 5
+a = 1
+b = 1
+V0 = 200
+c = a/4
 
 meshRes = 100
 boundaryValue = 0
-dtau = 0.0003
-N = 500
+dtau = 0.00005
+N = 4000
 
 grdState, excited1, excited2, X, Y, energyList = ft.quantumSolver2D(0, 
                                                  a, 0, b, meshRes, 
